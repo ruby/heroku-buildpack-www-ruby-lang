@@ -5,14 +5,14 @@ require "rubygems"
 require "language_pack"
 require "language_pack/base"
 require "language_pack/ruby_version"
+require "language_pack/version"
 
 # base Ruby Language Pack. This is for any base ruby app.
 class LanguagePack::Ruby < LanguagePack::Base
   NAME                 = "ruby"
-  BUILDPACK_VERSION    = "v81"
   LIBYAML_VERSION      = "0.1.4"
   LIBYAML_PATH         = "libyaml-#{LIBYAML_VERSION}"
-  BUNDLER_VERSION      = "1.3.2"
+  BUNDLER_VERSION      = "1.5.1"
   BUNDLER_GEM_PATH     = "bundler-#{BUNDLER_VERSION}"
   NODE_VERSION         = "0.4.7"
   NODE_JS_BINARY_PATH  = "node-#{NODE_VERSION}"
@@ -427,10 +427,14 @@ WARNING
     FileUtils.rm File.join('bin', File.basename(path)), :force => true
   end
 
+  def load_default_cache?
+    new_app? && ruby_version.default?
+  end
+
   # loads a default bundler cache for new apps to speed up initial bundle installs
   def load_default_cache
     instrument "ruby.load_default_cache" do
-      if new_app? && ruby_version.default?
+      if load_default_cache?
         puts "New app detected loading default bundler cache"
         patchlevel = run("ruby -e 'puts RUBY_PATCHLEVEL'").chomp
         cache_name  = "#{DEFAULT_RUBY_VERSION}-p#{patchlevel}-default-cache"
@@ -477,6 +481,7 @@ WARNING
         bundle_without = ENV["BUNDLE_WITHOUT"] || "development:test"
         bundle_bin     = "bundle"
         bundle_command = "#{bundle_bin} install --without #{bundle_without} --path vendor/bundle --binstubs #{bundler_binstubs_path}"
+        bundle_command << " -j4"
 
         unless File.exist?("Gemfile.lock")
           error "Gemfile.lock is required. Please run \"bundle install\" locally\nand commit your Gemfile.lock."
@@ -532,7 +537,12 @@ WARNING
           log "bundle", :status => "success"
           puts "Cleaning up the bundler cache."
           instrument "ruby.bundle_clean" do
-            pipe "#{bundle_bin} clean 2> /dev/null"
+            # Only show bundle clean output when not using default cache
+            if load_default_cache?
+              run "bundle clean > /dev/null"
+            else
+              pipe "#{bundle_bin} clean 2> /dev/null"
+            end
           end
           cache.store ".bundle"
           cache.store "vendor/bundle"
@@ -543,7 +553,7 @@ WARNING
           log "bundle", :status => "failure"
           error_message = "Failed to install gems via Bundler."
           puts "Bundler Output: #{bundler_output}"
-          if bundler_output.match(/Installing sqlite3 \([\w.]+\)( with native extensions)?\s+Gem::Installer::ExtensionBuildError: ERROR: Failed to build gem native extension./)
+          if bundler_output.match(/An error occurred while installing sqlite3/)
             error_message += <<ERROR
 
 
