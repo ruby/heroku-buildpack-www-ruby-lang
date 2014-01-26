@@ -1,4 +1,4 @@
-require 'shellwords'
+require "shellwords"
 
 module LanguagePack
   module ShellHelpers
@@ -25,6 +25,13 @@ module LanguagePack
       result = run(command)
       error("Command: '#{command}' failed unexpectedly:\n#{result}") unless $?.success?
       return result
+    end
+
+    # doesn't do any special piping. stderr won't be redirected.
+    # @param [String] command to be run
+    # @return [String] output of stdout
+    def run_no_pipe(command)
+      %x{ bash -c #{command.shellescape} }
     end
 
     # run a shell command and pipe stderr to /dev/null
