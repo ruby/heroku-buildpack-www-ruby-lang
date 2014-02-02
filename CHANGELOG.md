@@ -1,10 +1,61 @@
 ## Master
 
+## v98 (1/30/2014)
+
 Features:
 
 Bugfixes:
 
-## v91 (01/16/2013)
+* Use vendored JDK binary during build
+
+
+## v97 (1/30/2014)
+
+Features:
+
+Bugfixes:
+
+* Actually finalize method rename to `install_bundler_in_app`
+
+
+## v96 (1/29/2014)
+
+Features:
+
+Bugfixes:
+
+* Finalize method rename to `install_bundler_in_app`
+
+## v95
+
+Rollback to v93
+
+## v94 (1/29/2014)
+
+Features:
+
+Bugfixes:
+
+* Fixed `uninitialized constant Rake::DSL` error when running rake tasks on Ruby 1.9.2
+
+## v93 (01/28/2014)
+
+Features:
+
+* buildpack-env-arg (ponies) support
+
+Bugfixes:
+
+## v92 (01/27/2014)
+
+Features:
+
+Bugfixes:
+
+* Only display rake error messages if a `Rakefile` exists
+* when detecting for ruby version, don't use stderr messages
+
+## v91 (01/16/2014)
 
 Features:
 
@@ -13,7 +64,7 @@ Features:
 Bugfixes:
 
 
-## v90 (01/09/2013)
+## v90 (01/09/2014)
 
 Features:
 
@@ -21,7 +72,7 @@ Features:
 
 Bugfixes:
 
-## v89 (01/09/2013)
+## v89 (01/09/2014)
 
 Features:
 
