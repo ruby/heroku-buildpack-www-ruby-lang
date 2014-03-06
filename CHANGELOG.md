@@ -1,5 +1,47 @@
 ## Master
 
+## v108 (2/27/2014)
+
+Features:
+
+* parse Bundler patchlevel option
+
+Bugfixes:
+
+* don't let users step on themselves by replacing `env` in `$PATH`
+
+## v107 (2/26/2014)
+
+Features:
+
+Bugfixes:
+
+* more shellescaping bug fixes
+
+
+## v105
+
+Rollbacked to v103
+
+
+## v104 (2/26/2014)
+
+Features:
+
+Bugfixes:
+
+* fix bugs in shellescaping (#231)
+
+
+## v103 (2/18/2014)
+
+Features:
+
+* Rails 4.1.0 Support. Stop writing database.yml and support for secrets.yml by generating SECRET_KEY_BASE for users.
+
+Bugfixes:
+
+
 ## v102 (2/6/2014)
 
 Features:

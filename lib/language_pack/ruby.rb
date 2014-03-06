@@ -58,9 +58,6 @@ class LanguagePack::Ruby < LanguagePack::Base
     instrument "ruby.default_config_vars" do
       vars = {
         "LANG"     => "en_US.UTF-8",
-        "PATH"     => default_path,
-        "GEM_PATH" => slug_vendor_base,
-        "GEM_HOME" => slug_vendor_base
       }
 
       ruby_version.jruby? ? vars.merge({
@@ -232,7 +229,7 @@ private
 
       ENV["GEM_PATH"] = slug_vendor_base
       ENV["GEM_HOME"] = slug_vendor_base
-      ENV["PATH"]     = config_vars["PATH"]
+      ENV["PATH"]     = default_path
     end
   end
 
@@ -507,19 +504,19 @@ WARNING
           install_libyaml(libyaml_dir)
 
           # need to setup compile environment for the psych gem
-          yaml_include   = File.expand_path("#{libyaml_dir}/include")
-          yaml_lib       = File.expand_path("#{libyaml_dir}/lib")
-          pwd            = run("pwd").chomp
+          yaml_include   = File.expand_path("#{libyaml_dir}/include").shellescape
+          yaml_lib       = File.expand_path("#{libyaml_dir}/lib").shellescape
+          pwd            = Dir.pwd
           bundler_path   = "#{pwd}/#{slug_vendor_base}/gems/#{BUNDLER_GEM_PATH}/lib"
           # we need to set BUNDLE_CONFIG and BUNDLE_GEMFILE for
           # codon since it uses bundler.
           env_vars       = {
             "BUNDLE_GEMFILE"                => "#{pwd}/Gemfile",
             "BUNDLE_CONFIG"                 => "#{pwd}/.bundle/config",
-            "CPATH"                         => "#{yaml_include}:$CPATH",
-            "CPPATH"                        => "#{yaml_include}:$CPPATH",
-            "LIBRARY_PATH"                  => "#{yaml_lib}:$LIBRARY_PATH",
-            "RUBYOPT"                       => "\"#{syck_hack}\"",
+            "CPATH"                         => noshellescape("#{yaml_include}:$CPATH"),
+            "CPPATH"                        => noshellescape("#{yaml_include}:$CPPATH"),
+            "LIBRARY_PATH"                  => noshellescape("#{yaml_lib}:$LIBRARY_PATH"),
+            "RUBYOPT"                       => syck_hack,
             "NOKOGIRI_USE_SYSTEM_LIBRARIES" => "true"
           }
           env_vars["BUNDLER_LIB_PATH"] = "#{bundler_path}" if ruby_version.ruby_version == "1.8.7"
