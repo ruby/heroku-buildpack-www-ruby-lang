@@ -698,8 +698,7 @@ params = CGI.parse(uri.query || "")
       if precompile.success?
         puts "Asset precompilation completed (#{"%.2f" % precompile.time}s)"
       else
-        log "assets_precompile", :status => "failure"
-        error "Precompiling assets failed."
+        precompile_fail(precompile.output)
       end
     end
   end
@@ -710,6 +709,16 @@ params = CGI.parse(uri.query || "")
     unless $? == 0
       error "Failed to generate site with jekyll."
     end
+  end
+
+  def precompile_fail(output)
+    log "assets_precompile", :status => "failure"
+    msg = "Precompiling assets failed.\n"
+    if output.match(/(127\.0\.0\.1)|(org\.postgresql\.util)/)
+      msg << "Attempted to access a nonexistent database:\n"
+      msg << "https://devcenter.heroku.com/articles/pre-provision-database\n"
+    end
+    error msg
   end
 
   def bundler_cache
