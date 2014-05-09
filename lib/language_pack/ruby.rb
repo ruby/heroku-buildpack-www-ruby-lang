@@ -176,7 +176,7 @@ private
       last_version      = nil
       last_version      = @metadata.read(last_version_file).chomp if @metadata.exists?(last_version_file)
 
-      @ruby_version = LanguagePack::RubyVersion.new(bundler,
+      @ruby_version = LanguagePack::RubyVersion.new(bundler.ruby_version,
         is_new:       new_app,
         last_version: last_version)
       return @ruby_version
@@ -693,8 +693,10 @@ params = CGI.parse(uri.query || "")
     "#{Dir.pwd}/#{NODE_BP_PATH}"
   end
 
+  # checks if node.js is installed via the official heroku-buildpack-nodejs using multibuildpack
+  # @return [Boolean] true if it's detected and false if it isn't
   def node_js_installed?
-    @node_js_installed ||= run("node -v", env: {"PATH" => "#{node_bp_bin_path}:#{ENV["PATH"]}" }) && $?.success?
+    @node_js_installed ||= run("#{node_bp_bin_path}/node -v") && $?.success?
   end
 
   def run_assets_precompile_rake_task
