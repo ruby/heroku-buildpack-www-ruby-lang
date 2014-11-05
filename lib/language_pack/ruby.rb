@@ -203,22 +203,6 @@ private
     "-Djava.rmi.server.useCodebaseOnly=true"
   end
 
-  # list the available valid ruby versions
-  # @note the value is memoized
-  # @return [Array] list of Strings of the ruby versions available
-  def ruby_versions
-    return @ruby_versions if @ruby_versions
-
-    Dir.mktmpdir("ruby_versions-") do |tmpdir|
-      Dir.chdir(tmpdir) do
-        @fetchers[:buildpack].fetch("ruby_versions.yml")
-        @ruby_versions = YAML::load_file("ruby_versions.yml")
-      end
-    end
-
-    @ruby_versions
-  end
-
   # sets up the environment variables for the build process
   def setup_language_pack_environment
     instrument 'ruby.setup_language_pack_environment' do
@@ -259,11 +243,6 @@ private
     instrument 'ruby.install_ruby' do
       return false unless ruby_version
 
-      invalid_ruby_version_message = <<ERROR
-Invalid RUBY_VERSION specified: #{ruby_version.version}
-Valid versions: #{ruby_versions.join(", ")}
-ERROR
-
       if ruby_version.build?
         FileUtils.mkdir_p(build_ruby_path)
         Dir.chdir(build_ruby_path) do
@@ -272,7 +251,6 @@ ERROR
             @fetchers[:mri].fetch_untar("#{ruby_version.version.sub(ruby_vm, "#{ruby_vm}-build")}.tgz")
           end
         end
-        error invalid_ruby_version_message unless $?.success?
       end
 
       FileUtils.mkdir_p(slug_vendor_ruby)
@@ -303,7 +281,6 @@ ERROR_MSG
           end
         end
       end
-      error invalid_ruby_version_message unless $?.success?
 
       app_bin_dir = "bin"
       FileUtils.mkdir_p app_bin_dir
@@ -328,6 +305,14 @@ WARNING
     end
 
     true
+  rescue LanguagePack::Fetcher::FetchError => error
+    message = <<ERROR
+An error occurred while installing Ruby #{ruby_version.version}
+For supported Ruby versions see https://devcenter.heroku.com/articles/ruby-support#supported-runtimes
+Note: Only the most recent version of Ruby 2.1 is supported on Cedar-14
+#{error.message}
+ERROR
+    error message
   end
 
   def new_app?
