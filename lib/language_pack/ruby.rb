@@ -76,6 +76,15 @@ class LanguagePack::Ruby < LanguagePack::Base
     end
   end
 
+  def best_practice_warnings
+    if bundler.has_gem?("asset_sync")
+      warn(<<-WARNING)
+You are using the `asset_sync` gem.
+See https://devcenter.heroku.com/articles/please-do-not-use-asset-sync for more information.
+WARNING
+    end
+  end
+
   def compile
     instrument 'ruby.compile' do
       # check for new app at the beginning of the compile
@@ -96,6 +105,7 @@ class LanguagePack::Ruby < LanguagePack::Base
         run_assets_precompile_rake_task
         generate_jekyll_site
       end
+      best_practice_warnings
       super
     end
   end
@@ -358,7 +368,7 @@ ERROR_MSG
 
       topic "Using Ruby version: #{ruby_version.version}"
       if !ruby_version.set
-        warn(<<WARNING)
+        warn(<<-WARNING)
 You have not declared a Ruby version in your Gemfile.
 To set your Ruby version add this line to your Gemfile:
 #{ruby_version.to_gemfile}
@@ -369,12 +379,21 @@ WARNING
 
     true
   rescue LanguagePack::Fetcher::FetchError => error
-    message = <<ERROR
+    if ruby_version.jruby?
+      message = <<ERROR
+An error occurred while installing Ruby #{ruby_version.version}
+For supported Ruby versions see https://devcenter.heroku.com/articles/ruby-support#supported-runtimes
+Note: Only JRuby 1.7.13 and newer are supported on Cedar-14
+#{error.message}
+ERROR
+    else
+      message = <<ERROR
 An error occurred while installing Ruby #{ruby_version.version}
 For supported Ruby versions see https://devcenter.heroku.com/articles/ruby-support#supported-runtimes
 Note: Only the most recent version of Ruby 2.1 is supported on Cedar-14
 #{error.message}
 ERROR
+    end
     error message
   end
 
@@ -493,7 +512,7 @@ ERROR
   # https://github.com/heroku/heroku-buildpack-ruby/issues/21
   def remove_vendor_bundle
     if File.exists?("vendor/bundle")
-      warn(<<WARNING)
+      warn(<<-WARNING)
 Removing `vendor/bundle`.
 Checking in `vendor/bundle` is not supported. Please remove this directory
 and add it to your .gitignore. To vendor your gems with Bundler, use
@@ -517,7 +536,7 @@ WARNING
         bundle_command << " -j4"
 
         if bundler.windows_gemfile_lock?
-          warn(<<WARNING, inline: true)
+          warn(<<-WARNING, inline: true)
 Removing `Gemfile.lock` because it was generated on Windows.
 Bundler will do a full resolve so native gems are handled properly.
 This may result in unexpected gem versions being used in your app.
