@@ -49,7 +49,8 @@ describe "Ruby Versions" do
     app.heroku.put_stack(app.name, 'cedar-14')
 
     app.deploy do |app|
-      expect(app.output).to match("Installing JVM: openjdk1.8-latest")
+      expect(app.output).to match("Installing JVM: openjdk-8")
+      expect(app.output).to match("Picked up JAVA_TOOL_OPTIONS: -Xmx2048m")
       expect(app.output).to match("JRUBY_OPTS is:  -Xcompile.invokedynamic=false")
       expect(app.output).not_to include("OpenJDK 64-Bit Server VM warning")
 
@@ -66,7 +67,7 @@ describe "Ruby Versions" do
     app.heroku.put_stack(app.name, 'cedar-14')
 
     app.deploy do |app|
-      expect(app.output).to match("Installing JVM: openjdk1.7-latest")
+      expect(app.output).to match("Installing JVM: openjdk-7")
       expect(app.output).not_to include("OpenJDK 64-Bit Server VM warning")
     end
   end
