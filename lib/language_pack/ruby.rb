@@ -218,6 +218,14 @@ esac
 EOF
   end
 
+  def set_java_mem
+    <<-EOF
+if ! [[ "${JAVA_OPTS}" == *-Xmx* ]]; then
+  export JAVA_MEM=${JAVA_MEM:--Xmx${JVM_MAX_HEAP}m}
+fi
+EOF
+  end
+
   def set_default_web_concurrency
     <<-EOF
 case $(ulimit -u) in
@@ -245,10 +253,10 @@ EOF
     "-Xcompile.invokedynamic=false"
   end
 
-  # default JAVA_TOOL_OPTIONS
-  # return [String] string of JAVA_TOOL_OPTIONS
-  def default_java_tool_options
-    "-Xmx${JVM_MAX_HEAP:-\"384\"}m"
+  # default Java Xmx
+  # return [String] string of Java Xmx
+  def default_java_mem
+    "-Xmx${JVM_MAX_HEAP:-384}m"
   end
 
   # sets up the environment variables for the build process
@@ -256,14 +264,14 @@ EOF
     instrument 'ruby.setup_language_pack_environment' do
       if ruby_version.jruby?
         ENV["PATH"] += ":bin"
-        ENV["JAVA_TOOL_OPTIONS"] = run(<<-SHELL).chomp
+        ENV["JAVA_MEM"] = run(<<-SHELL).chomp
 #{set_jvm_max_heap}
-echo #{default_java_tool_options}
+echo #{default_java_mem}
 SHELL
         ENV["JRUBY_OPTS"] = env('JRUBY_BUILD_OPTS') || env('JRUBY_OPTS')
       end
       setup_ruby_install_env
-      ENV["PATH"] += ":#{node_bp_bin_path}" if node_js_installed?
+      ENV["PATH"] += ":#{node_preinstall_bin_path}" if node_js_installed?
 
       # TODO when buildpack-env-args rolls out, we can get rid of
       # ||= and the manual setting below
@@ -288,9 +296,9 @@ SHELL
 
       if ruby_version.jruby?
         add_to_export set_jvm_max_heap
+        add_to_export set_java_mem
         set_export_default "JAVA_OPTS",  default_java_opts
         set_export_default "JRUBY_OPTS", default_jruby_opts
-        set_export_default "JAVA_TOOL_OPTIONS", default_java_tool_options
       end
     end
   end
@@ -306,9 +314,9 @@ SHELL
 
       if ruby_version.jruby?
         add_to_profiled set_jvm_max_heap
+        add_to_profiled set_java_mem
         set_env_default "JAVA_OPTS", default_java_opts
         set_env_default "JRUBY_OPTS", default_jruby_opts
-        set_env_default "JAVA_TOOL_OPTIONS", default_java_tool_options
       end
     end
   end
@@ -755,17 +763,28 @@ params = CGI.parse(uri.query || "")
   # @note execjs will blow up if no JS RUNTIME is detected and is loaded.
   # @return [Array] the node.js binary path if we need it or an empty Array
   def add_node_js_binary
-    bundler.has_gem?('execjs') && !node_js_installed? ? [@node_installer.binary_path] : []
-  end
-
-  def node_bp_bin_path
-    "#{Dir.pwd}/#{NODE_BP_PATH}"
+    bundler.has_gem?('execjs') && node_not_preinstalled? ? [@node_installer.binary_path] : []
   end
 
   # checks if node.js is installed via the official heroku-buildpack-nodejs using multibuildpack
-  # @return [Boolean] true if it's detected and false if it isn't
-  def node_js_installed?
-    @node_js_installed ||= run("#{node_bp_bin_path}/node -v") && $?.success?
+  # @return String if it's detected and false if it isn't
+  def node_preinstall_bin_path
+    return @node_preinstall_bin_path if defined?(@node_preinstall_bin_path)
+
+    legacy_path = "#{Dir.pwd}/#{NODE_BP_PATH}"
+    path        = run("which node")
+    if path && $?.success?
+      @node_preinstall_bin_path = path
+    elsif run("#{legacy_path}/node -v") && $?.success?
+      @node_preinstall_bin_path = legacy_path
+    else
+      @node_preinstall_bin_path = false
+    end
+  end
+  alias :node_js_installed? :node_preinstall_bin_path
+
+  def node_not_preinstalled?
+    !node_js_installed?
   end
 
   def run_assets_precompile_rake_task

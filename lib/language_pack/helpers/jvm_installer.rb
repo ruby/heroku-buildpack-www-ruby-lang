@@ -59,6 +59,7 @@ class LanguagePack::JvmInstaller
 
   def fetch_untar(jvm_path, jvm_version=nil)
     topic "Installing JVM: #{jvm_version || jvm_path}"
+
     FileUtils.mkdir_p(@vendor_dir)
     Dir.chdir(@vendor_dir) do
       @fetcher.fetch_untar(jvm_path)
