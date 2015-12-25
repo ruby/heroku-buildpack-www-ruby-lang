@@ -104,8 +104,8 @@ WARNING
         install_binaries
         run_assets_precompile_rake_task
         generate_jekyll_site
+        purge_fastly
       end
-      purge_fastly
       best_practice_warnings
       super
     end
