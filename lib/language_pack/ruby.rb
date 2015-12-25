@@ -105,6 +105,7 @@ WARNING
         run_assets_precompile_rake_task
         generate_jekyll_site
       end
+      purge_fastly
       best_practice_warnings
       super
     end
@@ -808,6 +809,14 @@ params = CGI.parse(uri.query || "")
     pipe("env PATH=$PATH bundle exec rake generate 2>&1")
     unless $? == 0
       error "Failed to generate site with jekyll."
+    end
+  end
+
+  def purge_fastly
+    puts "Purge Fastly cache"
+    pipe("env PATH=$PATH curl -X POST -H 'Fastly-Key:#{ENV['FASTLY_API_KEY']}' https://api.fastly.com/service/#{ENV['FASTLY_SERVICE_ID']}/purge_all")
+    unless $? == 0
+      error "Failed to purge fastly cache."
     end
   end
 
