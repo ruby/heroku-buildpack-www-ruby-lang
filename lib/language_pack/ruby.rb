@@ -104,7 +104,7 @@ WARNING
         install_binaries
         run_assets_precompile_rake_task
         generate_jekyll_site
-        purge_fastly
+        purge_fastly if ENV['RACK_ENV'] == 'production'
       end
       best_practice_warnings
       super
