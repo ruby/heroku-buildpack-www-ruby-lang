@@ -104,7 +104,7 @@ WARNING
         install_binaries
         run_assets_precompile_rake_task
         generate_jekyll_site
-        purge_fastly if ENV['RACK_ENV'] == 'production'
+        purge_fastly if env('RACK_ENV') == 'production'
       end
       best_practice_warnings
       super
@@ -814,7 +814,7 @@ params = CGI.parse(uri.query || "")
 
   def purge_fastly
     puts "Purge Fastly cache"
-    pipe("env PATH=$PATH curl -X POST -H 'Fastly-Key:#{ENV['FASTLY_API_KEY']}' https://api.fastly.com/service/#{ENV['FASTLY_SERVICE_ID']}/purge_all")
+    pipe("env PATH=$PATH curl -X POST -H 'Fastly-Key:#{env('FASTLY_API_KEY')}' https://api.fastly.com/service/#{env('FASTLY_SERVICE_ID')}/purge_all")
     unless $? == 0
       error "Failed to purge fastly cache."
     end
