@@ -16,7 +16,6 @@ class LanguagePack::Ruby < LanguagePack::Base
   LIBYAML_PATH         = "libyaml-#{LIBYAML_VERSION}"
   BUNDLER_VERSION      = "1.9.7"
   BUNDLER_GEM_PATH     = "bundler-#{BUNDLER_VERSION}"
-  DEFAULT_RUBY_VERSION = "ruby-2.0.0"
   RBX_BASE_URL         = "http://binaries.rubini.us/heroku"
   NODE_BP_PATH         = "vendor/node/bin"
 
@@ -501,7 +500,7 @@ ERROR
       if false # load_default_cache?
         puts "New app detected loading default bundler cache"
         patchlevel = run("ruby -e 'puts RUBY_PATCHLEVEL'").chomp
-        cache_name  = "#{DEFAULT_RUBY_VERSION}-p#{patchlevel}-default-cache"
+        cache_name  = "#{LanguagePack::RubyVersion::DEFAULT_VERSION}-p#{patchlevel}-default-cache"
         @fetchers[:buildpack].fetch_untar("#{cache_name}.tgz")
       end
     end
@@ -757,7 +756,7 @@ params = CGI.parse(uri.query || "")
   # decides if we need to enable the dev database addon
   # @return [Array] the database addon if the pg gem is detected or an empty Array if it isn't.
   def add_dev_database_addon
-    bundler.has_gem?("pg") ? ['heroku-postgresql:hobby-dev'] : []
+    bundler.has_gem?("pg") ? ['heroku-postgresql'] : []
   end
 
   # decides if we need to install the node.js binary
