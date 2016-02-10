@@ -102,7 +102,7 @@ WARNING
         create_database_yml
         install_binaries
         run_assets_precompile_rake_task
-        generate_jekyll_site
+        build_jekyll_site
         purge_fastly if env('RACK_ENV') == 'production'
       end
       best_practice_warnings
@@ -803,11 +803,11 @@ params = CGI.parse(uri.query || "")
     end
   end
 
-  def generate_jekyll_site
+  def build_jekyll_site
     puts "Building jekyll site"
-    pipe("env PATH=$PATH bundle exec rake generate 2>&1")
+    pipe("env PATH=$PATH bundle exec rake build 2>&1")
     unless $? == 0
-      error "Failed to generate site with jekyll."
+      error "Failed to build site with jekyll."
     end
   end
 
