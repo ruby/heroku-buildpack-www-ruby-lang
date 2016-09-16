@@ -827,7 +827,7 @@ params = CGI.parse(uri.query || "")
 
   def build_jekyll_site
     puts "Building jekyll site"
-    pipe("env PATH=$PATH bundle exec rake build 2>&1")
+    pipe("env PATH=$PATH JEKYLL_ENV=production bundle exec rake build 2>&1")
     unless $? == 0
       error "Failed to build site with jekyll."
     end
