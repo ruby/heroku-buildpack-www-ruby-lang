@@ -79,6 +79,7 @@ class LanguagePack::Ruby < LanguagePack::Base
     if bundler.has_gem?("asset_sync")
       warn(<<-WARNING)
 You are using the `asset_sync` gem.
+This is not recommended.
 See https://devcenter.heroku.com/articles/please-do-not-use-asset-sync for more information.
 WARNING
     end
@@ -90,6 +91,7 @@ WARNING
       new_app?
       Dir.chdir(build_path)
       remove_vendor_bundle
+      warn_bundler_upgrade
       install_ruby
       install_jvm
       setup_language_pack_environment
@@ -111,6 +113,21 @@ WARNING
   end
 
 private
+
+  def warn_bundler_upgrade
+    old_bundler_version  = @metadata.read("bundler_version").chomp if @metadata.exists?("bundler_version")
+
+    if old_bundler_version && old_bundler_version != BUNDLER_VERSION
+      puts(<<-WARNING)
+Your app was upgraded to bundler #{ BUNDLER_VERSION }.
+Previously you had a successful deploy with bundler #{ old_bundler_version }.
+
+If you see problems related to the bundler version please refer to:
+https://devcenter.heroku.com/articles/bundler-version
+
+WARNING
+    end
+  end
 
   # the base PATH environment variable to be used
   # @return [String] the resulting PATH
@@ -637,12 +654,20 @@ WARNING
           error_message = "Failed to install gems via Bundler."
           puts "Bundler Output: #{bundler_output}"
           if bundler_output.match(/An error occurred while installing sqlite3/)
-            error_message += <<ERROR
+            error_message += <<-ERROR
 
-
-Detected sqlite3 gem which is not supported on Heroku.
+Detected sqlite3 gem which is not supported on Heroku:
 https://devcenter.heroku.com/articles/sqlite3
-ERROR
+            ERROR
+          end
+
+          if bundler_output.match(/but your Gemfile specified/)
+            error_message += <<-ERROR
+
+Detected a mismatch between your Ruby version installed and
+Ruby version specified in Gemfile or Gemfile.lock:
+https://devcenter.heroku.com/articles/ruby-versions#your-ruby-version-is-x-but-your-gemfile-specified-y
+            ERROR
           end
 
           error error_message
@@ -870,21 +895,9 @@ params = CGI.parse(uri.query || "")
       rubygems_version_cache  = "rubygems_version"
       stack_cache             = "stack"
 
-      old_bundler_version  = @metadata.read(bundler_version_cache).chomp if @metadata.exists?(bundler_version_cache)
       old_rubygems_version = @metadata.read(ruby_version_cache).chomp if @metadata.exists?(ruby_version_cache)
       old_stack = @metadata.read(stack_cache).chomp if @metadata.exists?(stack_cache)
       old_stack ||= DEFAULT_LEGACY_STACK
-
-      if old_bundler_version && old_bundler_version != BUNDLER_VERSION
-        puts(<<-WARNING)
-Your app was upgraded to bundler #{ BUNDLER_VERSION }.
-Previously you had a successful deploy with bundler #{ old_bundler_version }.
-
-If you see problems related to the bundler version please refer to:
-https://devcenter.heroku.com/articles/bundler-version
-
-WARNING
-      end
 
       stack_change  = old_stack != @stack
       convert_stack = @bundler_cache.old?
