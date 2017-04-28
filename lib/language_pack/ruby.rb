@@ -5,7 +5,9 @@ require "rubygems"
 require "language_pack"
 require "language_pack/base"
 require "language_pack/ruby_version"
+require "language_pack/helpers/nodebin"
 require "language_pack/helpers/node_installer"
+require "language_pack/helpers/yarn_installer"
 require "language_pack/helpers/jvm_installer"
 require "language_pack/version"
 
@@ -39,8 +41,9 @@ class LanguagePack::Ruby < LanguagePack::Base
     super(build_path, cache_path)
     @fetchers[:mri]    = LanguagePack::Fetcher.new(VENDOR_URL, @stack)
     @fetchers[:rbx]    = LanguagePack::Fetcher.new(RBX_BASE_URL, @stack)
-    @node_installer    = LanguagePack::NodeInstaller.new(@stack)
-    @jvm_installer     = LanguagePack::JvmInstaller.new(slug_vendor_jvm, @stack)
+    @node_installer    = LanguagePack::Helpers::NodeInstaller.new
+    @yarn_installer    = LanguagePack::Helpers::YarnInstaller.new
+    @jvm_installer     = LanguagePack::Helpers::JvmInstaller.new(slug_vendor_jvm, @stack)
   end
 
   def name
@@ -159,19 +162,18 @@ WARNING
     "/usr/local/bin:/usr/bin:/bin"
   end
 
+  def self.slug_vendor_base
+    command = %q(ruby -e "require 'rbconfig';puts \"vendor/bundle/#{RUBY_ENGINE}/#{RbConfig::CONFIG['ruby_version']}\"")
+    slug_vendor_base = run_no_pipe(command, user_env: true).chomp
+    error "Problem detecting bundler vendor directory: #{@slug_vendor_base}" unless $?.success?
+    return slug_vendor_base
+  end
+
   # the relative path to the bundler directory of gems
   # @return [String] resulting path
   def slug_vendor_base
     instrument 'ruby.slug_vendor_base' do
-      if @slug_vendor_base
-        @slug_vendor_base
-      elsif ruby_version.ruby_version == "1.8.7"
-        @slug_vendor_base = "vendor/bundle/1.8"
-      else
-        @slug_vendor_base = run_no_pipe(%q(ruby -e "require 'rbconfig';puts \"vendor/bundle/#{RUBY_ENGINE}/#{RbConfig::CONFIG['ruby_version']}\"")).chomp
-        error "Problem detecting bundler vendor directory: #{@slug_vendor_base}" unless $?.success?
-        @slug_vendor_base
-      end
+      @slug_vendor_base ||= self.class.slug_vendor_base
     end
   end
 
@@ -293,6 +295,7 @@ SHELL
       end
       setup_ruby_install_env
       ENV["PATH"] += ":#{node_preinstall_bin_path}" if node_js_installed?
+      ENV["PATH"] += ":#{yarn_preinstall_bin_path}" if !yarn_not_preinstalled?
 
       # TODO when buildpack-env-args rolls out, we can get rid of
       # ||= and the manual setting below
@@ -327,9 +330,13 @@ SHELL
   # sets up the profile.d script for this buildpack
   def setup_profiled
     instrument 'setup_profiled' do
+      profiled_path = [binstubs_relative_paths.map {|path| "$HOME/#{path}" }.join(":")]
+      profiled_path << "vendor/#{@yarn_installer.binary_path}" if has_yarn_binary?
+      profiled_path << "$PATH"
+
       set_env_default  "LANG",     "en_US.UTF-8"
       set_env_override "GEM_PATH", "$HOME/#{slug_vendor_base}:$GEM_PATH"
-      set_env_override "PATH",     binstubs_relative_paths.map {|path| "$HOME/#{path}" }.join(":") + ":$PATH"
+      set_env_override "PATH",      profiled_path.join(":")
 
       add_to_profiled set_default_web_concurrency if env("SENSIBLE_DEFAULTS")
 
@@ -443,7 +450,7 @@ ERROR
   # default set of binaries to install
   # @return [Array] resulting list
   def binaries
-    add_node_js_binary
+    add_node_js_binary + add_yarn_binary
   end
 
   # vendors binaries into the slug
@@ -458,11 +465,25 @@ ERROR
   # @param [String] name of the binary package from S3.
   #   Example: https://s3.amazonaws.com/language-pack-ruby/node-0.4.7.tgz, where name is "node-0.4.7"
   def install_binary(name)
+    topic "Installing #{name}"
     bin_dir = "bin"
     FileUtils.mkdir_p bin_dir
     Dir.chdir(bin_dir) do |dir|
       if name.match(/^node\-/)
         @node_installer.install
+        # need to set PATH here b/c `node-gyp` can change the CWD, but still depends on executing node.
+        # the current PATH is relative, but it needs to be absolute for this.
+        # doing this here also prevents it from being exported during runtime
+        node_bin_path = File.absolute_path(".")
+        # this needs to be set after so other binaries in bin/ don't take precedence"
+        ENV["PATH"] = "#{ENV["PATH"]}:#{node_bin_path}"
+      elsif name.match(/^yarn\-/)
+        FileUtils.mkdir_p("../vendor")
+        Dir.chdir("../vendor") do |vendor_dir|
+          @yarn_installer.install
+          yarn_path = File.absolute_path("#{vendor_dir}/#{@yarn_installer.binary_path}")
+          ENV["PATH"] = "#{yarn_path}:#{ENV["PATH"]}"
+        end
       else
         @fetchers[:buildpack].fetch_untar("#{name}.tgz")
       end
@@ -785,6 +806,14 @@ params = CGI.parse(uri.query || "")
     bundler.has_gem?('execjs') && node_not_preinstalled? ? [@node_installer.binary_path] : []
   end
 
+  def add_yarn_binary
+    bundler.has_gem?('webpacker') && yarn_not_preinstalled? ? [@yarn_installer.name] : []
+  end
+
+  def has_yarn_binary?
+    add_yarn_binary.any?
+  end
+
   # checks if node.js is installed via the official heroku-buildpack-nodejs using multibuildpack
   # @return String if it's detected and false if it isn't
   def node_preinstall_bin_path
@@ -804,6 +833,21 @@ params = CGI.parse(uri.query || "")
 
   def node_not_preinstalled?
     !node_js_installed?
+  end
+
+  def yarn_preinstall_bin_path
+    return @yarn_preinstall_bin_path if defined?(@yarn_preinstall_bin_path)
+
+    path = run("which yarn")
+    if path && $?.success?
+      @yarn_preinstall_bin_path = path
+    else
+      @yarn_preinstall_bin_path = false
+    end
+  end
+
+  def yarn_not_preinstalled?
+    !yarn_preinstall_bin_path
   end
 
   def run_assets_precompile_rake_task

@@ -73,7 +73,14 @@
   "rails5": [
     "sharpstone/rails5"
   ],
+  "rails51": [
+    "schneems/rails51_webpacker"
+  ],
   "multibuildpack": [
     "sharpstone/node_multi"
+  ],
+  "ci": [
+    "sharpstone/rails5_ruby_schema_format",
+    "sharpstone/heroku-ci-json-example"
   ]
 }

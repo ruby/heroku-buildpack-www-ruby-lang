@@ -1,5 +1,28 @@
 ## Master
 
+## v159 (04/24/2017)
+
+*  Blacklist JAVA_OPTS and JAVA_TOOL_OPTIONS during build (#559)
+
+## v158 (04/12/2017)
+
+*  Fix CI issue causing system Ruby to be used (#558)
+
+## v157 (04/11/2017)
+
+* Fix "double ruby rainbow bug" caused by executing two `compile` actions on the same
+app (#553 & #555)
+* Remove Ruby 1.8.7 compatiability to allow for #555. This version of Ruby has been EOL
+for a long time. It is not available on Cedar-14 and Cedar-10 is EOL
+
+## v156 (04/11/2017)
+
+* Update default Ruby version to 2.3.4.
+
+## v155 (03/16/2017)
+
+* Yarn now installed for apps with `webpacker` gem (#547)
+
 ## v154 (03/01/2017)
 
 * Postgres database add-on will only be provisioned if app has a postgres driver in the `Gemfile`. (#535)
