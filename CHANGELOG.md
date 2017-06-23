@@ -1,5 +1,26 @@
 ## Master
 
+## v164 (06/21/2017)
+
+* Update Bundler to 1.15.1 (#579)
+
+## v163 (05/22/2017)
+
+* Fix CI rake tasks not running (#571)
+
+## v162 (05/18/2017)
+
+* Disable roubocop warnings for `heroku_clear_tasks` (#567)
+
+## v161 (05/18/2017)
+
+* Ruby apps being run on CI are no longer expected to have Rails commands (#565)
+
+## v160 (05/18/2017)
+
+* `bin/rails test` only gets called in CI for Rails 5+ apps
+* support `:sql` (structure) Rails schema for CI (#549)
+
 ## v159 (04/24/2017)
 
 *  Blacklist JAVA_OPTS and JAVA_TOOL_OPTIONS during build (#559)

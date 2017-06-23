@@ -16,7 +16,7 @@ class LanguagePack::Ruby < LanguagePack::Base
   NAME                 = "ruby"
   LIBYAML_VERSION      = "0.1.7"
   LIBYAML_PATH         = "libyaml-#{LIBYAML_VERSION}"
-  BUNDLER_VERSION      = "1.13.7"
+  BUNDLER_VERSION      = "1.15.1"
   BUNDLER_GEM_PATH     = "bundler-#{BUNDLER_VERSION}"
   RBX_BASE_URL         = "http://binaries.rubini.us/heroku"
   NODE_BP_PATH         = "vendor/node/bin"
@@ -390,8 +390,6 @@ ERROR
 
     if ruby_version.jruby?
       message << "Note: Only JRuby 1.7.13 and newer are supported on Cedar-14"
-    elsif ruby_version.ruby_version.start_with?("2.1")
-      message << "Note: Only the most recent version of Ruby 2.1 is supported on Cedar-14\n"
     end
 
     message << "\nDebug Information"
