@@ -1,11 +1,16 @@
-#!/bin/bash
-# The actual `bin/compile` code lives in `bin/ruby_compile`. This file instead
-# bootstraps the ruby needed and then executes `bin/ruby_compile`
+#!/bin/sh
 
-BIN_DIR=$(cd $(dirname $0); pwd)
-BUILDPACK_DIR=$(dirname $BIN_DIR)
+indent() {
+  sed -u 's/^/       /'
+}
 
-source "$BIN_DIR/support/bash_functions.sh"
-heroku_buildpack_ruby_install_ruby "$BIN_DIR" "$BUILDPACK_DIR"
+echo "-----> Found a hello.txt"
 
-$heroku_buildpack_ruby_dir/bin/ruby $BIN_DIR/support/ruby_compile $@
+# if hello.txt is empty, abort the build
+if [ ! -s $1/hello.txt ]; then
+  echo "hello.txt was empty" | indent
+  exit 1
+fi
+
+# replace hello with goodbye in a new file
+cat $1/hello.txt | sed -e "s/[Hh]ello/Goodbye/g" > $1/goodbye.txt

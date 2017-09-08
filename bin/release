@@ -1,6 +1,11 @@
-#!/usr/bin/env ruby
+#!/bin/sh
 
-require 'pathname'
-
-release = Pathname.new(ARGV.first).join("tmp/heroku-buildpack-release-step.yml")
-puts release.read if release.exist?
+cat << EOF
+---
+addons:
+  - shared-database:5mb
+config_vars:
+  PATH: bin:/usr/bin:/bin
+default_process_types:
+  hello: cat hello.txt
+EOF
