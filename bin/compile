@@ -1,13 +1,13 @@
 #!/bin/sh
+# bin/compile BUILD_DIR CACHE_DIR ENV_DIR
 
 indent() {
   sed -u 's/^/       /'
 }
 
-export PATH=$PATH:$(dirname $(dirname $0))/vendor/bundle/bin
-
 echo "-----> Building jekyll site"
 
+cd $1
 env JEKYLL_ENV=production bundle exec rake build 2>&1 | indent
 
 if [ $? -ne 0 ]; then
