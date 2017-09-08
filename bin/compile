@@ -8,7 +8,7 @@ export PATH=$PATH:$(dirname $(dirname $0))/vendor/bundle/bin
 
 echo "-----> Building jekyll site"
 
-env JEKYLL_ENV=production bundle exec rake build 2>&1
+env JEKYLL_ENV=production bundle exec rake build 2>&1 | indent
 
 if [ $? -ne 0 ]; then
   echo "Failed to build site with jekyll."
@@ -16,7 +16,7 @@ fi
 
 echo "-----> Purge Fastly cache"
 
-curl -X POST -H "Fastly-Key:$FASTLY_API_KEY" https://api.fastly.com/service/$FASTLY_SERVICE_ID/purge_all
+curl -X POST -H "Fastly-Key:$FASTLY_API_KEY" https://api.fastly.com/service/$FASTLY_SERVICE_ID/purge_all | indent
 
 if [ $? -ne 0 ]; then
   echo "Failed to purge fastly cache."
