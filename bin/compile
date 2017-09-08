@@ -4,13 +4,18 @@ indent() {
   sed -u 's/^/       /'
 }
 
-echo "-----> Found a hello.txt"
+echo "-----> Building jekyll site"
 
-# if hello.txt is empty, abort the build
-if [ ! -s $1/hello.txt ]; then
-  echo "hello.txt was empty" | indent
-  exit 1
+env PATH=$PATH JEKYLL_ENV=production bundle exec rake build 2>&1
+
+if [ $? -ne 0 ]; then
+  echo "Failed to build site with jekyll."
 fi
 
-# replace hello with goodbye in a new file
-cat $1/hello.txt | sed -e "s/[Hh]ello/Goodbye/g" > $1/goodbye.txt
+echo "-----> Purge Fastly cache"
+
+env PATH=$PATH curl -X POST -H "Fastly-Key:ENV['FASTLY_API_KEY']" "https://api.fastly.com/service/ENV['FASTLY_SERVICE_ID']/purge_all"
+
+if [ $? -ne 0 ]; then
+  echo "Failed to purge fastly cache."
+fi
